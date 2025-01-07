@@ -69,7 +69,7 @@ static NbtInstance* parse_nbt_real(RealNbt* nbt)
     NbtInstance* instance = g_new(NbtInstance, 1);
     instance->original_nbt = nbt;
     instance->current_nbt = nbt;
-    instance->tree_struct = NULL;
+    instance->tree_struct = get_new_tree(nbt);
     return instance;
 }
 
@@ -77,7 +77,8 @@ NbtInstance* dh_nbt_if_parse(const char* filename)
 {
     size_t len = 0;
     guint8* content = NULL;
-    if(g_file_get_contents(filename, (char**)&content, &len, NULL))
+    GError* err = NULL;
+    if(g_file_get_contents(filename, (char**)&content, &len, &err))
     {
 #ifdef LIBNBT_CODE_SPECIFIC
         NBT* nbt = NBT_Parse(content, len);
@@ -105,7 +106,7 @@ void dh_nbt_instance_free(NbtInstance* instance)
 {
 #ifdef LIBNBT_CODE_SPECIFIC
     NBT_Free(instance->original_nbt);
-    g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
+    if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
     g_free(instance->tree_struct);
     g_free(instance);
 #endif
@@ -115,7 +116,7 @@ int dh_nbt_instance_next(NbtInstance* instance)
 {
 #ifdef LIBNBT_CODE_SPECIFIC
     RealNbt* c_nbt = instance->current_nbt;
-    if(c_nbt->next)
+    if(c_nbt)
     {
         instance->current_nbt = c_nbt->next;
         return TRUE;
@@ -143,7 +144,9 @@ int dh_nbt_instance_child(NbtInstance *instance)
 {
     #ifdef LIBNBT_CODE_SPECIFIC
     RealNbt* c_nbt = instance->current_nbt;
-    if(c_nbt->child)
+    if(c_nbt && 
+    (dh_nbt_instance_is_type(instance, DH_TYPE_Compound) || 
+     dh_nbt_instance_is_type(instance, DH_TYPE_List)))
     {
         instance->current_nbt = c_nbt->child;
         g_ptr_array_add(instance->tree_struct->tree_array, instance->current_nbt);
@@ -166,15 +169,142 @@ void dh_nbt_instance_goto_root(NbtInstance* instance)
 int dh_nbt_instance_is_type(NbtInstance* instance, DhNbtType type)
 {
     #ifdef LIBNBT_CODE_SPECIFIC
+    if(!instance->current_nbt)
+    {
+        if(type == DH_TYPE_INVALID)
+            return TRUE;
+        else
+            return FALSE;
+    }
     int o_type = instance->current_nbt->type;
     if(o_type == (type - 1)) return TRUE;
-    else return FALSE;
+    else
+    {
+        g_critical("Not the correspounding type.");
+        return FALSE;
+    }
     #endif
 }
 
-const char*  dh_nbt_instance_get_key(NbtInstance* instance)
+const char* dh_nbt_instance_get_key(NbtInstance* instance)
 {
     #ifdef LIBNBT_CODE_SPECIFIC
-    return instance->current_nbt->key;
+    if(instance->current_nbt)
+        return instance->current_nbt->key;
+    else return NULL;
     #endif
+}
+
+int8_t dh_nbt_instance_get_byte(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Byte))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_i;
+        #endif
+    }
+    else return -1;
+}
+
+int16_t dh_nbt_instance_get_short(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Short))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_i;
+        #endif
+    }
+    else return -1;
+}
+
+int32_t dh_nbt_instance_get_int(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Int))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_i;
+        #endif
+    }
+    else return -1;
+}
+
+int64_t dh_nbt_instance_get_long(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Long))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_i;
+        #endif
+    }
+    else return -1;
+}
+
+float dh_nbt_instance_get_float(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Float))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_d;
+        #endif
+    }
+    else return -1;
+}
+
+double dh_nbt_instance_get_double(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Double))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_d;
+        #endif
+    }
+    else return -1;
+}
+
+/* The array type should not be freed! */
+const char* dh_nbt_instance_get_string(NbtInstance* instance)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_String))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        return instance->current_nbt->value_a.value;
+        #endif
+    }
+    else return NULL;
+}
+
+const int8_t* dh_nbt_instance_get_byte_array(NbtInstance* instance, int* len)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Byte_Array))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        *len = instance->current_nbt->value_a.len;
+        return instance->current_nbt->value_a.value;
+        #endif
+    }
+    else return NULL;
+}
+
+const int32_t* dh_nbt_instance_get_int_array(NbtInstance* instance, int* len)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Int_Array))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        *len = instance->current_nbt->value_a.len;
+        return instance->current_nbt->value_a.value;
+        #endif
+    }
+    else return NULL;
+}
+
+const int64_t* dh_nbt_instance_get_long_array(NbtInstance* instance, int* len)
+{
+    if(dh_nbt_instance_is_type(instance, DH_TYPE_Long_Array))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        *len = instance->current_nbt->value_a.len;
+        return instance->current_nbt->value_a.value;
+        #endif
+    }
+    else return NULL;
 }

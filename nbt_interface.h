@@ -18,6 +18,7 @@
 #ifndef NBT_INTERFACE_H
 #define NBT_INTERFACE_H
 
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -43,6 +44,21 @@ int          dh_nbt_instance_child(NbtInstance* instance);
 void         dh_nbt_instance_goto_root(NbtInstance* instance);
 int          dh_nbt_instance_is_type(NbtInstance* instance, DhNbtType type);
 const char*  dh_nbt_instance_get_key(NbtInstance* instance);
+
+int8_t       dh_nbt_instance_get_byte(NbtInstance* instance);
+int16_t      dh_nbt_instance_get_short(NbtInstance* instance);
+int32_t      dh_nbt_instance_get_int(NbtInstance* instance);
+int64_t      dh_nbt_instance_get_long(NbtInstance* instance);
+float        dh_nbt_instance_get_float(NbtInstance* instance);
+double       dh_nbt_instance_get_double(NbtInstance* instance);
+
+/* The array type should not be freed! */
+const char*  dh_nbt_instance_get_string(NbtInstance* instance);
+const int8_t*   dh_nbt_instance_get_byte_array(NbtInstance* instance, int* len);
+const int32_t*  dh_nbt_instance_get_int_array(NbtInstance* instance, int* len);
+const int64_t*  dh_nbt_instance_get_long_array(NbtInstance* instance, int* len);
+
+
 
 #ifdef __cplusplus
 }
