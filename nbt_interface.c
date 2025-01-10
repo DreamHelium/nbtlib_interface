@@ -92,7 +92,7 @@ NbtInstance* dh_nbt_if_parse(const char* filename)
     else return NULL;
 }
 
-RealNbt* dh_nbt_if_get_real_original_nbt(NbtInstance* instance)
+RealNbt* dh_nbt_instance_get_real_original_nbt(NbtInstance* instance)
 {
     return instance->original_nbt;
 }
