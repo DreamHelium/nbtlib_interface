@@ -34,10 +34,13 @@ typedef enum {
     DH_TYPE_INVALID, DH_TYPE_End, DH_TYPE_Byte, DH_TYPE_Short, DH_TYPE_Int, DH_TYPE_Long, DH_TYPE_Float, DH_TYPE_Double, DH_TYPE_Byte_Array, DH_TYPE_String, DH_TYPE_List, DH_TYPE_Compound, DH_TYPE_Int_Array, DH_TYPE_Long_Array} DhNbtType;
 
 NbtInstance* dh_nbt_if_parse(const char* filename);
+NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt);
+NbtInstance* dh_nbt_instance_dup(NbtInstance* instance);
 void         dh_nbt_instance_free(NbtInstance* instance);
 RealNbt*     dh_nbt_instance_get_real_original_nbt(NbtInstance* instance);
 RealNbt*     dh_nbt_instance_get_real_current_nbt(NbtInstance* instance);
-DhNbtType    dh_nbt_get_type();
+DhNbtType    dh_nbt_get_type(NbtInstance* instance);
+int          dh_nbt_instance_is_non_null(NbtInstance* instance);
 int          dh_nbt_instance_next(NbtInstance* instance);
 int          dh_nbt_instance_parent(NbtInstance* instance);
 int          dh_nbt_instance_child(NbtInstance* instance);
@@ -49,10 +52,12 @@ int8_t       dh_nbt_instance_get_byte(NbtInstance* instance);
 int16_t      dh_nbt_instance_get_short(NbtInstance* instance);
 int32_t      dh_nbt_instance_get_int(NbtInstance* instance);
 int64_t      dh_nbt_instance_get_long(NbtInstance* instance);
+int64_t      dh_nbt_instance_get_integer(NbtInstance* instance);
+
 float        dh_nbt_instance_get_float(NbtInstance* instance);
 double       dh_nbt_instance_get_double(NbtInstance* instance);
 
-/* The array type should not be freed! */
+/* The array type should be freed! */
 const char*  dh_nbt_instance_get_string(NbtInstance* instance);
 const int8_t*   dh_nbt_instance_get_byte_array(NbtInstance* instance, int* len);
 const int32_t*  dh_nbt_instance_get_int_array(NbtInstance* instance, int* len);
