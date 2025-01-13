@@ -37,10 +37,13 @@ NbtInstance* dh_nbt_if_parse(const char* filename);
 NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt);
 NbtInstance* dh_nbt_instance_dup(NbtInstance* instance);
 void         dh_nbt_instance_free(NbtInstance* instance);
+/* Not free the RealNbt Struct. */
+void         dh_nbt_instance_free_only_instance(NbtInstance* instance);
 RealNbt*     dh_nbt_instance_get_real_original_nbt(NbtInstance* instance);
 RealNbt*     dh_nbt_instance_get_real_current_nbt(NbtInstance* instance);
 DhNbtType    dh_nbt_get_type(NbtInstance* instance);
 int          dh_nbt_instance_is_non_null(NbtInstance* instance);
+int          dh_nbt_instance_prev(NbtInstance* instance);
 int          dh_nbt_instance_next(NbtInstance* instance);
 int          dh_nbt_instance_parent(NbtInstance* instance);
 int          dh_nbt_instance_child(NbtInstance* instance);
@@ -63,7 +66,21 @@ const int8_t*   dh_nbt_instance_get_byte_array(NbtInstance* instance, int* len);
 const int32_t*  dh_nbt_instance_get_int_array(NbtInstance* instance, int* len);
 const int64_t*  dh_nbt_instance_get_long_array(NbtInstance* instance, int* len);
 
-
+NbtInstance*    dh_nbt_instance_new_byte(int8_t value, const char* key);
+NbtInstance*    dh_nbt_instance_new_short(int16_t value, const char* key);
+NbtInstance*    dh_nbt_instance_new_int(int32_t value, const char* key);
+NbtInstance*    dh_nbt_instance_new_long(int64_t value, const char* key);
+NbtInstance*    dh_nbt_instance_new_float(float value, const char* key);
+NbtInstance*    dh_nbt_instance_new_double(double value, const char* key);
+NbtInstance*    dh_nbt_instance_new_string(const char* str, const char* key);
+NbtInstance*    dh_nbt_instance_new_byte_array(int8_t* value, int len, const char* key);
+NbtInstance*    dh_nbt_instance_new_int_array(int32_t* value, int len, const char* key);
+NbtInstance*    dh_nbt_instance_new_long_array(int64_t* value, int len, const char* key);
+NbtInstance*    dh_nbt_instance_new_list(const char* key);
+NbtInstance*    dh_nbt_instance_new_compound(const char* key);
+int             dh_nbt_instance_fill_child(NbtInstance* src, NbtInstance* child);
+int             dh_nbt_instance_fill_prev(NbtInstance* src, NbtInstance* prev);
+int             dh_nbt_instance_fill_next(NbtInstance* src, NbtInstance* next);
 
 #ifdef __cplusplus
 }

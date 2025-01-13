@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 #include "glib.h"
+#include <string.h>
 #define LIBNBT_CODE_SPECIFIC
 
 #ifdef LIBNBT_CODE_SPECIFIC
@@ -37,6 +38,8 @@ typedef struct _NbtInstance
     TreeStruct* tree_struct;
     /* Free onbt? */
     gboolean duped;
+    /* Reference counting */
+    int count;
 } _NbtInstance;
 
 /* I have forgotten the implement of this, thus copied from nbt_pos */
@@ -90,6 +93,7 @@ static NbtInstance* parse_nbt_real(RealNbt* nbt)
     instance->current_nbt = nbt;
     instance->tree_struct = get_new_tree(nbt);
     instance->duped = 0;
+    instance->count = 1;
     return instance;
 }
 
@@ -120,11 +124,25 @@ NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt)
 NbtInstance* dh_nbt_instance_dup(NbtInstance* instance)
 {
     NbtInstance* ret = g_new0(NbtInstance, 1);
-    ret->duped = 1;
-    ret->current_nbt = instance->current_nbt;
-    ret->original_nbt = instance->original_nbt;
-    ret->tree_struct = g_new0(TreeStruct, 1);
-    ret->tree_struct->tree_array = g_ptr_array_copy(instance->tree_struct->tree_array, NULL, NULL);
+    if(instance)
+    {
+        ret->duped = 1;
+        ret->current_nbt = instance->current_nbt;
+        ret->original_nbt = instance->original_nbt;
+        ret->tree_struct = g_new0(TreeStruct, 1);
+        ret->tree_struct->tree_array = g_ptr_array_copy(instance->tree_struct->tree_array, NULL, NULL);
+        ret->count = 1;
+    }
+    else
+    {
+        ret->duped = 1;
+        ret->current_nbt = NULL;
+        ret->original_nbt = NULL;
+        ret->tree_struct = g_new0(TreeStruct, 1);
+        ret->tree_struct->tree_array = g_ptr_array_new();
+        g_ptr_array_add(ret->tree_struct->tree_array, NULL);
+        ret->count = 1;
+    }
     return ret;
 }
 
@@ -141,11 +159,33 @@ RealNbt* dh_nbt_instance_get_real_current_nbt(NbtInstance* instance)
 void dh_nbt_instance_free(NbtInstance* instance)
 {
 #ifdef LIBNBT_CODE_SPECIFIC
-    if(!instance->duped) NBT_Free(instance->original_nbt);
+    if(!instance->duped && instance->original_nbt) NBT_Free(instance->original_nbt);
     if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
     g_free(instance->tree_struct);
     g_free(instance);
 #endif
+}
+
+void dh_nbt_instance_free_only_instance(NbtInstance* instance)
+{
+#ifdef LIBNBT_CODE_SPECIFIC
+    if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
+    g_free(instance->tree_struct);
+    g_free(instance);
+#endif
+}
+
+int dh_nbt_instance_prev(NbtInstance* instance)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    if(dh_nbt_instance_is_non_null(instance))
+    {
+        RealNbt* nbt = instance->current_nbt;
+        instance->current_nbt = nbt->prev;
+        return TRUE;
+    }
+    else return FALSE;
+    #endif
 }
 
 int dh_nbt_instance_next(NbtInstance* instance)
@@ -376,4 +416,197 @@ const int64_t* dh_nbt_instance_get_long_array(NbtInstance* instance, int* len)
         #endif
     }
     else return NULL;
+}
+
+static NBT* ret_non_filled_nbt()
+{
+    NBT* new_nbt = malloc(sizeof(NBT));
+    memset(new_nbt, 0, sizeof(NBT));
+    return new_nbt;
+}
+
+NbtInstance*    dh_nbt_instance_new_byte(int8_t value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Byte;
+    new_nbt->value_i = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_short(int16_t value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Short;
+    new_nbt->value_i = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_int(int32_t value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Int;
+    new_nbt->value_i = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_long(int64_t value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Long;
+    new_nbt->value_i = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_float(float value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Float;
+    new_nbt->value_d = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_double(double value, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Double;
+    new_nbt->value_d = value;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_string(const char* str, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_String;
+    new_nbt->value_a.value = dh_strdup(str);
+    new_nbt->value_a.len = strlen(str);
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_byte_array(int8_t* value, int len, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Byte_Array;
+    int byte = len * sizeof(int8_t);
+    int8_t* new_array = malloc(byte);
+    memcpy(new_array, value, byte);
+    new_nbt->value_a.value = new_array;
+    new_nbt->value_a.len = len;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_int_array(int32_t* value, int len, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Byte_Array;
+    int byte = len * sizeof(int32_t);
+    int32_t* new_array = malloc(byte);
+    memcpy(new_array, value, byte);
+    new_nbt->value_a.value = new_array;
+    new_nbt->value_a.len = len;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_long_array(int64_t* value, int len, const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Byte_Array;
+    int byte = len * sizeof(int64_t);
+    int64_t* new_array = malloc(byte);
+    memcpy(new_array, value, byte);
+    new_nbt->value_a.value = new_array;
+    new_nbt->value_a.len = len;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_list(const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_List;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+NbtInstance*    dh_nbt_instance_new_compound(const char* key)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* new_nbt = ret_non_filled_nbt();
+    new_nbt->type = TAG_Compound;
+    new_nbt->key = key ? dh_strdup(key) : NULL;
+    return dh_nbt_instance_new_from_real_nbt(new_nbt);
+    #endif
+}
+
+int dh_nbt_instance_fill_child(NbtInstance* src, NbtInstance* child)
+{
+    if(dh_nbt_instance_is_non_null(src) && dh_nbt_instance_is_non_null(child))
+    {
+        if(dh_nbt_instance_is_type(src, DH_TYPE_List) ||
+           dh_nbt_instance_is_type(src, DH_TYPE_Compound))
+        {
+            #ifdef LIBNBT_CODE_SPECIFIC
+            RealNbt* nbt = src->current_nbt;
+            nbt->child = child->current_nbt;
+            return TRUE;
+            #endif
+        }
+        else return FALSE;
+    }
+    else return FALSE;
+}
+
+int dh_nbt_instance_fill_prev(NbtInstance* src, NbtInstance* prev)
+{
+    if(dh_nbt_instance_is_non_null(src) && dh_nbt_instance_is_non_null(prev))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        RealNbt* nbt = src->current_nbt;
+        nbt->prev = prev->current_nbt;
+        return TRUE;
+        #endif
+    }
+    else return FALSE;
+}
+int dh_nbt_instance_fill_next(NbtInstance* src, NbtInstance* next)
+{
+    if(dh_nbt_instance_is_non_null(src) && dh_nbt_instance_is_non_null(next))
+    {
+        #ifdef LIBNBT_CODE_SPECIFIC
+        RealNbt* nbt = src->current_nbt;
+        nbt->next = next->current_nbt;
+        return TRUE;
+        #endif
+    }
+    else return FALSE;
 }
