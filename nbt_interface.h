@@ -18,6 +18,24 @@
 #ifndef NBT_INTERFACE_H
 #define NBT_INTERFACE_H
 
+/* From glibconfig.h */
+#ifdef __GNUC__
+#define G_GNUC_CHECK_VERSION(major, minor) \
+    ((__GNUC__ > (major)) || \
+     ((__GNUC__ == (major)) && \
+      (__GNUC_MINOR__ >= (minor))))
+#else
+#define G_GNUC_CHECK_VERSION(major, minor) 0
+#endif
+
+#if G_GNUC_CHECK_VERSION(3, 1) || defined(__clang__)
+#define G_DEPRECATED __attribute__((__deprecated__))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1300)
+#define G_DEPRECATED __declspec(deprecated)
+#else
+#define G_DEPRECATED
+#endif
+
 #include <stdint.h>
 #ifdef __cplusplus
 extern "C"{
@@ -27,15 +45,15 @@ extern "C"{
 typedef struct _NbtInstance NbtInstance;
 /* The real NBT structure */
 typedef struct _RealNbt RealNbt;
-/* The real Tree structure */
-typedef struct _TreeStruct TreeStruct;
 /* The enum type for recognize */
 typedef enum {
     DH_TYPE_INVALID, DH_TYPE_End, DH_TYPE_Byte, DH_TYPE_Short, DH_TYPE_Int, DH_TYPE_Long, DH_TYPE_Float, DH_TYPE_Double, DH_TYPE_Byte_Array, DH_TYPE_String, DH_TYPE_List, DH_TYPE_Compound, DH_TYPE_Int_Array, DH_TYPE_Long_Array} DhNbtType;
 
+#define      dh_nbt_interface_parse(filename) dh_nbt_if_parse(filename)
 NbtInstance* dh_nbt_if_parse(const char* filename);
 NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt);
 NbtInstance* dh_nbt_instance_dup(NbtInstance* instance);
+NbtInstance* dh_nbt_instance_dup_full(NbtInstance* instance);
 void         dh_nbt_instance_free(NbtInstance* instance);
 /* Not free the RealNbt Struct. */
 void         dh_nbt_instance_free_only_instance(NbtInstance* instance);
@@ -78,9 +96,14 @@ NbtInstance*    dh_nbt_instance_new_int_array(int32_t* value, int len, const cha
 NbtInstance*    dh_nbt_instance_new_long_array(int64_t* value, int len, const char* key);
 NbtInstance*    dh_nbt_instance_new_list(const char* key);
 NbtInstance*    dh_nbt_instance_new_compound(const char* key);
+#define         dh_nbt_instance_prepend(parent, child) dh_nbt_instance_fill_child(parent, child)
 int             dh_nbt_instance_fill_child(NbtInstance* src, NbtInstance* child);
+G_DEPRECATED
 int             dh_nbt_instance_fill_prev(NbtInstance* src, NbtInstance* prev);
+G_DEPRECATED
 int             dh_nbt_instance_fill_next(NbtInstance* src, NbtInstance* next);
+int             dh_nbt_instance_insert_after(NbtInstance* parent, NbtInstance* sibling, NbtInstance* node);
+int             dh_nbt_instance_insert_before(NbtInstance* parent, NbtInstance* sibling, NbtInstance* node);
 
 #ifdef __cplusplus
 }

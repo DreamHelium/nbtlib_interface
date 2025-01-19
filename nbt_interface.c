@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 #include "glib.h"
+#include "glibconfig.h"
 #include <string.h>
 #define LIBNBT_CODE_SPECIFIC
 
@@ -27,6 +28,9 @@
 #include "libnbt/nbt.h"
 #include "nbt_interface.h"
 #include <gio/gio.h>
+
+/* The real Tree structure */
+typedef struct _TreeStruct TreeStruct;
 
 typedef struct _NbtInstance
 {
@@ -144,6 +148,12 @@ NbtInstance* dh_nbt_instance_dup(NbtInstance* instance)
         ret->count = 1;
     }
     return ret;
+}
+
+NbtInstance* dh_nbt_instance_dup_full(NbtInstance* instance)
+{
+    /* TODO */
+    return instance;
 }
 
 RealNbt* dh_nbt_instance_get_real_original_nbt(NbtInstance* instance)
@@ -586,6 +596,7 @@ int dh_nbt_instance_fill_child(NbtInstance* src, NbtInstance* child)
     else return FALSE;
 }
 
+G_DEPRECATED
 int dh_nbt_instance_fill_prev(NbtInstance* src, NbtInstance* prev)
 {
     if(dh_nbt_instance_is_non_null(src) && dh_nbt_instance_is_non_null(prev))
@@ -609,4 +620,96 @@ int dh_nbt_instance_fill_next(NbtInstance* src, NbtInstance* next)
         #endif
     }
     else return FALSE;
+}
+
+#ifdef LIBNBT_CODE_SPECIFIC
+static gboolean nbt_instance_has_child(NbtInstance* parent, NbtInstance* child)
+{
+    NBT* parent_node = parent->current_nbt;
+    if(parent_node->child && child)
+    {
+        NBT* child_node = parent_node->child;
+        for(; child_node ; child_node = child_node->next)
+        {
+            if(child_node == child->current_nbt)
+                return TRUE;
+        }
+        return FALSE;
+    }
+    else if(child != NULL) 
+        return FALSE;
+    else return TRUE;
+}
+#endif
+
+int dh_nbt_instance_insert_after(NbtInstance* parent, NbtInstance* sibling, NbtInstance* node)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    if(nbt_instance_has_child(parent, sibling))
+    {
+        if(sibling->current_nbt && sibling)
+        {
+            NBT* sibling_node = sibling->current_nbt;
+            if(sibling_node->next)
+            {
+                sibling_node->next->prev = node->current_nbt;
+            }
+            node->current_nbt->next = sibling_node->next;
+            node->current_nbt->prev = sibling_node;
+            sibling_node->next = node->current_nbt;
+        }
+        else
+        {
+            if(parent->current_nbt->child)
+            {
+                node->current_nbt->next = parent->current_nbt;
+                parent->current_nbt->child->prev = node->current_nbt;
+            }
+            parent->current_nbt->child = node->current_nbt;
+        }
+        return TRUE;
+    }
+    else return FALSE;
+    #endif
+}
+
+int dh_nbt_instance_insert_before(NbtInstance *parent, NbtInstance *sibling, NbtInstance *node)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    if(nbt_instance_has_child(parent, sibling))
+    {
+        if(sibling && sibling->current_nbt)
+        {
+            NBT* sibling_node = sibling->current_nbt;
+            if(sibling_node->prev)
+            {
+                node->current_nbt->prev = sibling_node->prev;
+                node->current_nbt->prev->next = node->current_nbt;
+                node->current_nbt->next = sibling_node;
+                sibling_node->prev = node->current_nbt;
+            }
+            else
+            {
+                parent->current_nbt->child = node->current_nbt;
+                node->current_nbt->next = sibling_node;
+                sibling_node->prev = node->current_nbt;
+            }
+        }
+        else 
+        {
+            if(parent->current_nbt->child)
+            {
+                NBT* sibling_node = parent->current_nbt->child;
+                while(sibling_node->next)
+                    sibling_node = sibling_node->next;
+                node->current_nbt->prev = sibling_node;
+                sibling_node->next = node->current_nbt;
+            }
+            else
+                parent->current_nbt->child = node->current_nbt;
+        }
+        return TRUE;
+    }
+    else return FALSE;
+    #endif
 }
