@@ -49,11 +49,14 @@ typedef struct _RealNbt RealNbt;
 typedef enum {
     DH_TYPE_INVALID, DH_TYPE_End, DH_TYPE_Byte, DH_TYPE_Short, DH_TYPE_Int, DH_TYPE_Long, DH_TYPE_Float, DH_TYPE_Double, DH_TYPE_Byte_Array, DH_TYPE_String, DH_TYPE_List, DH_TYPE_Compound, DH_TYPE_Int_Array, DH_TYPE_Long_Array} DhNbtType;
 
-#define      dh_nbt_interface_parse(filename) dh_nbt_if_parse(filename)
+#define      dh_nbt_instance_parse(filename) dh_nbt_if_parse(filename)
 NbtInstance* dh_nbt_if_parse(const char* filename);
 NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt);
+void         dh_nbt_instance_set_free_only_instance(NbtInstance* instance, int val);
+/* Free only instance */
 NbtInstance* dh_nbt_instance_dup(NbtInstance* instance);
-NbtInstance* dh_nbt_instance_dup_full(NbtInstance* instance);
+/* To be implemented. */
+// NbtInstance* dh_nbt_instance_dup_full(NbtInstance* instance);
 void         dh_nbt_instance_free(NbtInstance* instance);
 /* Not free the RealNbt Struct. */
 void         dh_nbt_instance_free_only_instance(NbtInstance* instance);
@@ -79,7 +82,7 @@ float        dh_nbt_instance_get_float(NbtInstance* instance);
 double       dh_nbt_instance_get_double(NbtInstance* instance);
 
 /* The array type should be freed! */
-const char*  dh_nbt_instance_get_string(NbtInstance* instance);
+const char*     dh_nbt_instance_get_string(NbtInstance* instance);
 const int8_t*   dh_nbt_instance_get_byte_array(NbtInstance* instance, int* len);
 const int32_t*  dh_nbt_instance_get_int_array(NbtInstance* instance, int* len);
 const int64_t*  dh_nbt_instance_get_long_array(NbtInstance* instance, int* len);
@@ -104,6 +107,8 @@ G_DEPRECATED
 int             dh_nbt_instance_fill_next(NbtInstance* src, NbtInstance* next);
 int             dh_nbt_instance_insert_after(NbtInstance* parent, NbtInstance* sibling, NbtInstance* node);
 int             dh_nbt_instance_insert_before(NbtInstance* parent, NbtInstance* sibling, NbtInstance* node);
+
+int             dh_nbt_instance_save_to_file(NbtInstance* instance, const char* pos);
 
 #ifdef __cplusplus
 }

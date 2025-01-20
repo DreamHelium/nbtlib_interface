@@ -6,9 +6,9 @@ find_package(PkgConfig)
 
 pkg_search_module(GIO REQUIRED gio-2.0)
 
-set(NI_SOURCE nbt_interface.c)
+set(NI_SOURCE nbt_interface.c nbt_if_common.c)
 
-set(NI_HEADER nbt_interface.h)
+set(NI_HEADER nbt_interface.h nbt_if_common.h)
 
 set(NI_EXTERNAL_SOURCE libnbt/nbt.c libnbt/nbt.h)
 

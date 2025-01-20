@@ -15,20 +15,20 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef NBT_IF_COMMON_H
-#define NBT_IF_COMMON_H
+#include "nbt_if_common.h"
+#include <glib.h>
 
-#include "nbt_interface.h"
-
-#ifdef __cplusplus
-extern "C"{
-#endif
-
-int dh_nbt_instance_child_to_node(NbtInstance* instance, const char* key);
-
-
-#ifdef __cplusplus
+int dh_nbt_instance_child_to_node(NbtInstance* instance, const char* key)
+{
+    if(dh_nbt_instance_child(instance))
+    {
+        for(; dh_nbt_instance_is_non_null(instance) ; dh_nbt_instance_next(instance))
+        {
+            if(!strcmp(dh_nbt_instance_get_key(instance), key))
+                return TRUE;
+        }
+        dh_nbt_instance_parent(instance);
+        return FALSE;
+    }
+    else return FALSE;
 }
-#endif
-
-#endif /* NBT_IF_COMMON_H */

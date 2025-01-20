@@ -15,8 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#include "glib.h"
-#include "glibconfig.h"
 #include <string.h>
 #define LIBNBT_CODE_SPECIFIC
 
@@ -41,7 +39,7 @@ typedef struct _NbtInstance
     /* This can be NULL, based on the implement */
     TreeStruct* tree_struct;
     /* Free onbt? */
-    gboolean duped;
+    gboolean free_only_instance;
     /* Reference counting */
     int count;
 } _NbtInstance;
@@ -79,6 +77,72 @@ static char *dh_strdup(const char *o_str)
 #endif
 }
 
+static gboolean dh_file_create_gfile(GFile* file, gboolean is_file)
+{
+    if(!file)
+        return FALSE;
+    GError* error = NULL;
+    if(file)
+    {
+        if(g_file_query_exists(file, NULL)) /* If file exists, delete file */
+        {
+            if(!g_file_delete(file, NULL, &error)) /* Couldn't delete file */
+                goto error_handle;
+        }
+        /* I'll use a dummy way to create file
+         * First, I'll mkdir */
+        if(!g_file_make_directory_with_parents(file, NULL, &error))
+            goto error_handle;
+        if(is_file)
+        {
+            if(!g_file_delete(file, NULL, &error))
+                goto error_handle;
+            GFileOutputStream* gfos = g_file_create(file, G_FILE_CREATE_NONE, NULL, &error);
+            if(error)
+                goto error_handle;
+            g_object_unref(gfos);
+            return TRUE;
+        }
+        else return TRUE; /* It's directory */
+    }
+    else return FALSE;
+
+error_handle:
+    g_error_free(error);
+    return FALSE;
+}
+
+
+static gboolean dh_write_file_gfile(GFile* file, char* content, gsize count)
+{
+    if(!file)
+        return FALSE;
+    if(!dh_file_create_gfile(file, TRUE))
+        return FALSE;
+    GFileIOStream* fios = g_file_open_readwrite(file, NULL, NULL);
+    if(fios)
+    {
+        GOutputStream* os = g_io_stream_get_output_stream(G_IO_STREAM(fios));
+        int ret_d = g_output_stream_write(os, content, count, NULL, NULL);
+        gboolean ret = (ret_d == -1? FALSE : TRUE);
+        g_object_unref(fios);
+        return ret;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+
+static gboolean dh_write_file(const char* filepos, char* content, gsize count)
+{
+    GFile* file = g_file_new_for_path(filepos);
+    gboolean ret = dh_write_file_gfile(file, content, count);
+    g_object_unref(file);
+    return ret;
+}
+
 
 static TreeStruct* get_new_tree(RealNbt* nbt)
 {
@@ -96,7 +160,7 @@ static NbtInstance* parse_nbt_real(RealNbt* nbt)
     instance->original_nbt = nbt;
     instance->current_nbt = nbt;
     instance->tree_struct = get_new_tree(nbt);
-    instance->duped = 0;
+    instance->free_only_instance = 0;
     instance->count = 1;
     return instance;
 }
@@ -125,12 +189,17 @@ NbtInstance* dh_nbt_instance_new_from_real_nbt(RealNbt* nbt)
     return parse_nbt_real(nbt);
 }
 
+void dh_nbt_instance_set_free_only_instance(NbtInstance* instance, int val)
+{
+    instance->free_only_instance = val;
+}
+
 NbtInstance* dh_nbt_instance_dup(NbtInstance* instance)
 {
     NbtInstance* ret = g_new0(NbtInstance, 1);
     if(instance)
     {
-        ret->duped = 1;
+        ret->free_only_instance = 1;
         ret->current_nbt = instance->current_nbt;
         ret->original_nbt = instance->original_nbt;
         ret->tree_struct = g_new0(TreeStruct, 1);
@@ -139,7 +208,7 @@ NbtInstance* dh_nbt_instance_dup(NbtInstance* instance)
     }
     else
     {
-        ret->duped = 1;
+        ret->free_only_instance = 1;
         ret->current_nbt = NULL;
         ret->original_nbt = NULL;
         ret->tree_struct = g_new0(TreeStruct, 1);
@@ -168,21 +237,27 @@ RealNbt* dh_nbt_instance_get_real_current_nbt(NbtInstance* instance)
 
 void dh_nbt_instance_free(NbtInstance* instance)
 {
+    if(instance)
+    {
 #ifdef LIBNBT_CODE_SPECIFIC
-    if(!instance->duped && instance->original_nbt) NBT_Free(instance->original_nbt);
-    if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
-    g_free(instance->tree_struct);
-    g_free(instance);
+        if(!instance->free_only_instance && instance->original_nbt) NBT_Free(instance->original_nbt);
+        if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
+        g_free(instance->tree_struct);
+        g_free(instance);
 #endif
+    }
 }
 
 void dh_nbt_instance_free_only_instance(NbtInstance* instance)
 {
+    if(instance)
+    {
 #ifdef LIBNBT_CODE_SPECIFIC
-    if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
-    g_free(instance->tree_struct);
-    g_free(instance);
+        if(instance->tree_struct) g_ptr_array_free(instance->tree_struct->tree_array, FALSE);
+        g_free(instance->tree_struct);
+        g_free(instance);
 #endif
+    }
 }
 
 int dh_nbt_instance_prev(NbtInstance* instance)
@@ -711,5 +786,57 @@ int dh_nbt_instance_insert_before(NbtInstance *parent, NbtInstance *sibling, Nbt
         return TRUE;
     }
     else return FALSE;
+    #endif
+}
+
+int dh_nbt_instance_save_to_file(NbtInstance* instance, const char* pos)
+{
+    #ifdef LIBNBT_CODE_SPECIFIC
+    NBT* root = dh_nbt_instance_get_real_original_nbt(instance);
+    int bit = 1;
+    size_t len = 0;
+#ifndef LIBNBT_USE_LIBDEFLATE
+    size_t old_len = 0;
+#endif
+    uint8_t* data = NULL;
+    while(1)
+    {
+        len = 1 << bit;
+        data = (uint8_t*)malloc(len * sizeof(uint8_t));
+        int ret = NBT_Pack(root, data, &len);
+        if(ret == 0)
+        {
+#ifndef LIBNBT_USE_LIBDEFLATE
+            if(old_len != len) // compress not finish due to a bug in old libnbt (in submodule)
+            {
+                old_len = len;
+                free(data);
+                bit++;
+                continue;
+            }
+#endif
+            if(pos)
+            {
+                dh_write_file(pos, (char*)data, len);
+                free(data);
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else if(bit < 25)
+        {
+            free(data);
+            bit++; // It might be not enough space
+        }
+        else
+        {
+            free(data);
+            return 0;
+        }
+    }
+    return 0;
     #endif
 }
