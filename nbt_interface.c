@@ -294,10 +294,9 @@ int dh_nbt_instance_parent(NbtInstance* instance)
         return FALSE;
     else
     {
+        instance->current_nbt = instance->tree_struct->tree_array->pdata[len -1];
         /*  Move last*/
         g_ptr_array_remove_index(instance->tree_struct->tree_array, --len);
-        /* Get last */
-        instance->current_nbt = instance->tree_struct->tree_array->pdata[len - 1];
         return TRUE;
     }
 #endif
@@ -312,8 +311,8 @@ int dh_nbt_instance_child(NbtInstance *instance)
      dh_nbt_instance_is_type(instance, DH_TYPE_List)))
     {
         instance->current_nbt = c_nbt->child;
-        if(instance->current_nbt != instance->original_nbt->child)
-            g_ptr_array_add(instance->tree_struct->tree_array, instance->current_nbt);
+        if(c_nbt != instance->original_nbt)
+            g_ptr_array_add(instance->tree_struct->tree_array, c_nbt);
         return TRUE;
     }
     else return FALSE;

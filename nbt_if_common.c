@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 #include "nbt_if_common.h"
+#include "nbt_interface.h"
 #include <glib.h>
 
 int dh_nbt_instance_child_to_node(NbtInstance* instance, const char* key)
@@ -24,7 +25,7 @@ int dh_nbt_instance_child_to_node(NbtInstance* instance, const char* key)
     {
         for(; dh_nbt_instance_is_non_null(instance) ; dh_nbt_instance_next(instance))
         {
-            if(!strcmp(dh_nbt_instance_get_key(instance), key))
+            if(dh_nbt_instance_get_key(instance) && !strcmp(dh_nbt_instance_get_key(instance), key))
                 return TRUE;
         }
         dh_nbt_instance_parent(instance);
