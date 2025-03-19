@@ -581,7 +581,7 @@ NbtInstance*    dh_nbt_instance_new_string(const char* str, const char* key)
     NBT* new_nbt = ret_non_filled_nbt();
     new_nbt->type = TAG_String;
     new_nbt->value_a.value = dh_strdup(str);
-    new_nbt->value_a.len = strlen(str);
+    new_nbt->value_a.len = strlen(str) + 1;
     new_nbt->key = key ? dh_strdup(key) : NULL;
     return dh_nbt_instance_new_from_real_nbt(new_nbt);
     #endif
