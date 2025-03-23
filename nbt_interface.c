@@ -736,7 +736,7 @@ int dh_nbt_instance_insert_after(NbtInstance* parent, NbtInstance* sibling, NbtI
         {
             if(parent->current_nbt->child)
             {
-                node->current_nbt->next = parent->current_nbt;
+                node->current_nbt->next = parent->current_nbt->child;
                 parent->current_nbt->child->prev = node->current_nbt;
             }
             parent->current_nbt->child = node->current_nbt;

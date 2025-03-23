@@ -46,8 +46,11 @@ typedef struct _NbtInstance NbtInstance;
 /* The real NBT structure */
 typedef struct _RealNbt RealNbt;
 /* The enum type for recognize */
+#ifndef DH_NBT_TYPES
+#define DH_NBT_TYPES
 typedef enum {
     DH_TYPE_INVALID, DH_TYPE_End, DH_TYPE_Byte, DH_TYPE_Short, DH_TYPE_Int, DH_TYPE_Long, DH_TYPE_Float, DH_TYPE_Double, DH_TYPE_Byte_Array, DH_TYPE_String, DH_TYPE_List, DH_TYPE_Compound, DH_TYPE_Int_Array, DH_TYPE_Long_Array} DhNbtType;
+#endif
 
 #define      dh_nbt_instance_parse(filename) dh_nbt_if_parse(filename)
 NbtInstance* dh_nbt_if_parse(const char* filename);
